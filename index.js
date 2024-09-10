@@ -1,10 +1,12 @@
 const express = require("express");
 const morgan = require("morgan");
+const cors = require("cors");
 const app = express();
+app.use(cors());
 app.use(express.json());
 
-morgan.token("content", function (req, res) {
-    const person = JSON.stringify(req.body);
+morgan.token("content", function (request) {
+    const person = JSON.stringify(request.body);
     return person;
 });
 
@@ -37,10 +39,6 @@ let persons = [
     }
 ];
 
-app.get("/", (request, response) => {
-    response.send("<h1>Hello World</h1>");
-});
-
 app.get("/api/persons", (request, response) => {
     response.json(persons);
 });
@@ -62,8 +60,21 @@ app.get("/info", (request, response) => {
 
 app.delete("/api/persons/:id", (request, response) => {
     const id = Number(request.params.id);
+    const deletedPerson = persons.find((person) => person.id === id);
     persons = persons.filter((person) => person.id !== id);
-    response.status(204).end();
+    response.status(200).json(deletedPerson);
+});
+
+app.put("/api/persons/:id", (request, response) => {
+    const id = Number(request.params.id);
+    const updatedPerson = persons.find((person) => {
+        return person.id === id;
+    });
+    if (request.body.number) {
+        updatedPerson.number = request.body.number;
+        return response.status(200).json(updatedPerson);
+    }
+    return response(400).json({ error: "name missing" });
 });
 
 app.post("/api/persons", (request, response) => {
@@ -92,7 +103,7 @@ app.post("/api/persons", (request, response) => {
     response.json(newPerson);
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
