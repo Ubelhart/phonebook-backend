@@ -60,7 +60,9 @@ app.put("/api/persons/:id", (request, response, next) => {
         };
 
         return Person.findByIdAndUpdate(request.params.id, newNumber, {
-            new: true
+            new: true,
+            runValidators: true,
+            context: "query"
         })
             .then((updatedPerson) => {
                 response.status(200).json(updatedPerson);
@@ -92,6 +94,10 @@ app.post("/api/persons", (request, response, next) => {
                 name: name,
                 number: number
             });
+            const error = person.validateSync();
+            if (error) {
+                return response.status(400).json({ error: error.message });
+            }
             person
                 .save()
                 .then((result) => {
@@ -114,7 +120,9 @@ const errorHandler = (error, request, response, next) => {
     if (error.name === "CastError") {
         return response.status(400).send({ error: "malformatted id" });
     }
-
+    if (error.name === "ValidationError") {
+        return response.status(400).json({ error: error.message });
+    }
     next(error);
 };
 
